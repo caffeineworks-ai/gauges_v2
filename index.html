@@ -651,10 +651,12 @@ async function appsGet() {
 }
 
 async function appsPost(body) {
-    const res = await fetch(WEBAPP_URL, {
-        method: 'POST',
-        body: JSON.stringify(body)
+    const params = new URLSearchParams({
+        action: body.action,
+        data:   JSON.stringify(body.data || {}),
+        row:    body.row || ''
     });
+    const res = await fetch(WEBAPP_URL + '?' + params.toString());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
 }
