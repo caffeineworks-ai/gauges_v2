@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Edge Measurement Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --surface2: #222;
+            --border: #2e2e2e;
+            --accent: #c8f060;
+            --accent2: #60c8f0;
+            --red: #ff5a5a;
+            --blue: #5a9fff;
+            --text: #e8e8e8;
+            --muted: #666;
+            --font-mono: 'DM Mono', monospace;
+            --font-sans: 'DM Sans', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        header h1 {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        header span {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* Sheets 설정 바 */
+        #sheets-bar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #sheets-bar label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        #sheets-bar input {
+            flex: 1;
+            min-width: 200px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: var(--text);
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        #sheets-bar input:focus { outline: none; border-color: var(--accent); }
+
+        .btn-sm {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.15s;
+        }
+        .btn-sm:hover { opacity: 0.85; }
+        .btn-connect { background: var(--accent); color: #0f0f0f; }
+        .btn-danger { background: var(--red); color: white; }
+        .btn-neutral { background: var(--border); color: var(--text); }
+
+        #connection-status {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--border);
+            color: var(--muted);
+        }
+        #connection-status.connected { background: rgba(200,240,96,0.15); color: var(--accent); }
+        #connection-status.error { background: rgba(255,90,90,0.15); color: var(--red); }
+
+        /* 메인 레이아웃 */
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        /* 폼 필드 */
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .field input, .field select, .field textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px 10px;
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            transition: border-color 0.15s;
+        }
+
+        .field input:focus, .field select:focus, .field textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .field input[readonly] {
+            color: var(--accent2);
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 70px;
+            line-height: 1.5;
+        }
+
+        .field select option { background: var(--surface2); }
+
+        /* 라디오 버튼 */
+        .radio-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .radio-btn {
+            flex: 1;
+            position: relative;
+        }
+
+        .radio-btn input[type="radio"] { display: none; }
+
+        .radio-btn label {
+            display: block;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .radio-btn input[type="radio"]:checked + label {
+            border-color: var(--red);
+            color: var(--red);
+            background: rgba(255,90,90,0.08);
+        }
+
+        .radio-btn input[type="radio"][value="part"]:checked + label {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: rgba(90,159,255,0.08);
+        }
+
+        /* 비율 표시 */
+        .ratio-display {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ratio-display span:first-child {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .ratio-display span:last-child {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* 버튼들 */
+        .btn-ok {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: not-allowed;
+            background: var(--border);
+            color: var(--muted);
+            transition: all 0.15s;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .btn-ok.active {
+            background: var(--accent);
+            color: #0f0f0f;
+            cursor: pointer;
+        }
+
+        .btn-ok.active:hover { opacity: 0.9; }
+
+        .btn-ok.loading {
+            background: var(--border);
+            color: var(--muted);
+            cursor: wait;
+        }
+
+        /* 이미지 패널 */
+        .image-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #canvas-container {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: auto;
+            min-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #canvas-container .placeholder {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            line-height: 2;
+        }
+
+        canvas { cursor: crosshair; display: block; }
+
+        /* 레코드 네비게이터 */
+        .record-nav {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px 20px;
+        }
+
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .nav-header span {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .nav-index {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* 레코드 카드 */
+        .record-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 14px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 2;
+            display: none;
+        }
+
+        .record-card.visible { display: block; }
+
+        .record-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .record-key { color: var(--muted); min-width: 100px; }
+        .record-val { color: var(--text); word-break: break-all; }
+        .record-val.highlight { color: var(--accent); }
+
+        .record-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        /* 가이드 텍스트 */
+        .guide {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* 토스트 */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 18px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text);
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.25s;
+            z-index: 1000;
+        }
+
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.success { border-color: var(--accent); color: var(--accent); }
+        #toast.error { border-color: var(--red); color: var(--red); }
+
+        /* 구분선 */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Edge Measurement Tool</h1>
+    <span>v4 — Fillet / Chamfer Data Collector</span>
+</header>
+
+<!-- Apps Script Web App URL 설정 -->
+<div id="sheets-bar">
+    <label>Apps Script Web App URL</label>
+    <input type="text" id="webapp-url" placeholder="https://script.google.com/macros/s/AKfy.../exec">
+    <button class="btn-sm btn-connect" onclick="connectSheets()">Connect</button>
+    <span id="connection-status">Not connected</span>
+</div>
+
+<div class="layout">
+    <!-- 좌측 입력 패널 -->
+    <div class="panel">
+        <div class="panel-title">Measurement Input</div>
+
+        <!-- 이미지 URL -->
+        <div class="field">
+            <label>Image URL</label>
+            <input type="text" id="img-url" placeholder="https://...">
+        </div>
+
+        <!-- 측정 모드 -->
+        <div class="radio-row">
+            <div class="radio-btn">
+                <input type="radio" name="mode" id="mode-total" value="total" checked>
+                <label for="mode-total">● Total (Red)</label>
+            </div>
+            <div class="radio-btn">
+                <input type="radio" name="mode" id="mode-part" value="part">
+                <label for="mode-part">● Part (Blue)</label>
+            </div>
+        </div>
+
+        <!-- 전체 실제 크기 -->
+        <div class="field">
+            <label>Total Real Size (mm)</label>
+            <input type="number" id="total-real-val" placeholder="e.g. 150.9" step="any">
+            <div class="guide">※ 제품의 가장 좁은 치수 기준</div>
+        </div>
+
+        <!-- 추정 부분 크기 (읽기전용) -->
+        <div class="field">
+            <label>Estimated Part Size (mm)</label>
+            <input type="text" id="part-estimated-val" readonly placeholder="Auto-calculated">
+        </div>
+
+        <!-- 비율 표시 -->
+        <div class="ratio-display">
+            <span>Ratio (part/total)</span>
+            <span id="ratio-display">—</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 메타데이터 -->
+        <div class="field">
+            <label>Brand</label>
+            <input type="text" id="brand" placeholder="e.g. Apple">
+        </div>
+
+        <div class="field">
+            <label>Category</label>
+            <select id="category">
+                <option value="Mobile Device">Mobile Device</option>
+                <option value="Tablet">Tablet</option>
+                <option value="Laptop">Laptop</option>
+                <option value="Desktop">Desktop</option>
+                <option value="Wearable">Wearable</option>
+                <option value="Audio">Audio</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Product Name</label>
+            <input type="text" id="product-name" placeholder="e.g. iPhone 12">
+        </div>
+
+        <div class="field">
+            <label>Edge Type</label>
+            <select id="edge-type">
+                <option value="Fillet">Fillet</option>
+                <option value="Chamfer">Chamfer</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Description Sentence (EN)</label>
+            <textarea id="description" placeholder="e.g. The flat edges give it a sharp, industrial feel reminiscent of early iPhone designs."></textarea>
+        </div>
+
+        <div class="field">
+            <label>Text Source URL</label>
+            <input type="text" id="text-url" placeholder="https://...">
+        </div>
+
+        <div class="field">
+            <label>Worker</label>
+            <input type="text" id="worker" placeholder="e.g. Jiyeon">
+        </div>
+
+        <button class="btn-ok" id="btn-ok" disabled onclick="saveRecord()">
+            Save to Sheets
+        </button>
+    </div>
+
+    <!-- 우측 이미지 + 네비게이터 -->
+    <div class="image-panel">
+        <div id="canvas-container">
+            <div class="placeholder" id="canvas-placeholder">
+                Enter an image URL to begin<br>
+                <span style="font-size:10px">Click to place measurement points</span>
+            </div>
+            <canvas id="image-canvas" style="display:none"></canvas>
+        </div>
+
+        <!-- 레코드 네비게이터 -->
+        <div class="record-nav">
+            <div class="nav-header">
+                <span>Saved Records</span>
+                <div class="nav-controls">
+                    <button class="nav-btn" id="btn-prev" onclick="navigateRecord(-1)" disabled>‹</button>
+                    <span class="nav-index" id="nav-index">— / —</span>
+                    <button class="nav-btn" id="btn-next" onclick="navigateRecord(1)" disabled>›</button>
+                    <button class="btn-sm btn-neutral" onclick="loadRecords()">↻ Refresh</button>
+                </div>
+            </div>
+
+            <div class="record-card" id="record-card">
+                <div class="record-row"><span class="record-key">Brand</span><span class="record-val" id="rc-brand"></span></div>
+                <div class="record-row"><span class="record-key">Category</span><span class="record-val" id="rc-category"></span></div>
+                <div class="record-row"><span class="record-key">Product</span><span class="record-val" id="rc-product"></span></div>
+                <div class="record-row"><span class="record-key">Edge Type</span><span class="record-val" id="rc-type"></span></div>
+                <div class="record-row"><span class="record-key">Total (mm)</span><span class="record-val" id="rc-total"></span></div>
+                <div class="record-row"><span class="record-key">Part (mm)</span><span class="record-val" id="rc-part"></span></div>
+                <div class="record-row"><span class="record-key">Ratio</span><span class="record-val highlight" id="rc-ratio"></span></div>
+                <div class="record-row"><span class="record-key">Description</span><span class="record-val" id="rc-desc"></span></div>
+                <div class="record-row"><span class="record-key">Source</span><span class="record-val" id="rc-url"></span></div>
+                <div class="record-row"><span class="record-key">Worker</span><span class="record-val" id="rc-worker"></span></div>
+                <div class="record-actions">
+                    <button class="btn-sm btn-neutral" onclick="loadIntoForm()">Edit</button>
+                    <button class="btn-sm btn-danger" onclick="deleteRecord()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────
+// 상태
+// ──────────────────────────────────────────────
+let img = new Image();
+const canvas = document.getElementById('image-canvas');
+const ctx = canvas.getContext('2d');
+
+let totalPoints = [];
+let partPoints = [];
+let mousePos = { x: 0, y: 0 };
+let isMouseOver = false;
+
+let records = [];
+let currentIdx = -1;
+let editingRow = null;
+
+let sheetsConnected = false;
+let WEBAPP_URL = '';
+
+// ──────────────────────────────────────────────
+// Apps Script 연결
+// ──────────────────────────────────────────────
+async function connectSheets() {
+    WEBAPP_URL = document.getElementById('webapp-url').value.trim();
+    if (!WEBAPP_URL) {
+        showToast('Web App URL을 입력하세요', 'error');
+        return;
+    }
+
+    const status = document.getElementById('connection-status');
+    status.textContent = 'Connecting...';
+    status.className = '';
+
+    try {
+        const res = await appsGet();
+        if (!res.ok) throw new Error(res.error || 'Unknown error');
+        sheetsConnected = true;
+        status.textContent = '● Connected';
+        status.className = 'connected';
+        // URL 로컬 저장
+        localStorage.setItem('edge_webapp_url', WEBAPP_URL);
+        showToast('Connected — ' + res.records.length + ' records', 'success');
+        records = res.records;
+        if (records.length > 0) {
+            currentIdx = records.length - 1;
+            showRecord(currentIdx);
+        }
+        updateNavButtons();
+    } catch(e) {
+        status.textContent = '● Error';
+        status.className = 'error';
+        showToast('Connection failed: ' + e.message, 'error');
+    }
+}
+
+async function appsGet() {
+    const res = await fetch(WEBAPP_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+}
+
+async function appsPost(body) {
+    const res = await fetch(WEBAPP_URL, {
+        method: 'POST',
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+}
+
+// ──────────────────────────────────────────────
+// 레코드 로드
+// ──────────────────────────────────────────────
+async function loadRecords() {
+    if (!sheetsConnected) return;
+    try {
+        const res = await appsGet();
+        if (!res.ok) throw new Error(res.error);
+        records = res.records;
+        if (records.length > 0) {
+            currentIdx = records.length - 1;
+            showRecord(currentIdx);
+        } else {
+            currentIdx = -1;
+            document.getElementById('record-card').classList.remove('visible');
+            document.getElementById('nav-index').textContent = '0 / 0';
+        }
+        updateNavButtons();
+    } catch(e) {
+        showToast('Load failed: ' + e.message, 'error');
+    }
+}
+
+// ──────────────────────────────────────────────
+// 저장
+// ──────────────────────────────────────────────
+async function saveRecord() {
+    if (!sheetsConnected) {
+        showToast('먼저 Connect 하세요', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btn-ok');
+    btn.textContent = 'Saving...';
+    btn.classList.remove('active');
+    btn.classList.add('loading');
+
+    const totalReal = parseFloat(document.getElementById('total-real-val').value);
+    const partEst   = parseFloat(document.getElementById('part-estimated-val').value);
+    const ratio     = (partEst / totalReal).toFixed(4);
+
+    const data = {
+        brand:       document.getElementById('brand').value.trim(),
+        category:    document.getElementById('category').value,
+        product:     document.getElementById('product-name').value.trim(),
+        edgeType:    document.getElementById('edge-type').value,
+        totalReal,
+        partEst,
+        ratio,
+        description: document.getElementById('description').value.trim(),
+        textUrl:     document.getElementById('text-url').value.trim(),
+        worker:      document.getElementById('worker').value.trim()
+    };
+
+    try {
+        let res;
+        if (editingRow) {
+            res = await appsPost({ action: 'update', row: editingRow, data });
+            showToast('Record updated', 'success');
+        } else {
+            res = await appsPost({ action: 'append', data });
+            showToast('Record saved', 'success');
+        }
+        if (!res.ok) throw new Error(res.error);
+        resetForm();
+        await loadRecords();
+    } catch(e) {
+        showToast('Save failed: ' + e.message, 'error');
+    } finally {
+        btn.classList.remove('loading');
+        validateInputs();
+    }
+}
+
+// ──────────────────────────────────────────────
+// 네비게이션
+// ──────────────────────────────────────────────
+function navigateRecord(dir) {
+    const newIdx = currentIdx + dir;
+    if (newIdx < 0 || newIdx >= records.length) return;
+    currentIdx = newIdx;
+    showRecord(currentIdx);
+    updateNavButtons();
+}
+
+function showRecord(idx) {
+    if (idx < 0 || idx >= records.length) return;
+    const r = records[idx];
+    document.getElementById('rc-brand').textContent    = r['Brand']           || '—';
+    document.getElementById('rc-category').textContent = r['Category']        || '—';
+    document.getElementById('rc-product').textContent  = r['Product Name']    || '—';
+    document.getElementById('rc-type').textContent     = r['Edge Type']       || '—';
+    document.getElementById('rc-total').textContent    = r['Total Real (mm)'] || '—';
+    document.getElementById('rc-part').textContent     = r['Part Est (mm)']   || '—';
+    document.getElementById('rc-ratio').textContent    = r['Ratio']           || '—';
+    document.getElementById('rc-desc').textContent     = r['Description']     || '—';
+    document.getElementById('rc-url').textContent      = r['Text URL']        || '—';
+    document.getElementById('rc-worker').textContent   = r['Worker']          || '—';
+    document.getElementById('record-card').classList.add('visible');
+    document.getElementById('nav-index').textContent = `${idx + 1} / ${records.length}`;
+}
+
+function updateNavButtons() {
+    document.getElementById('btn-prev').disabled = currentIdx <= 0;
+    document.getElementById('btn-next').disabled = currentIdx >= records.length - 1;
+}
+
+function loadIntoForm() {
+    if (currentIdx < 0 || currentIdx >= records.length) return;
+    const r = records[currentIdx];
+    editingRow = r._row;
+
+    document.getElementById('brand').value        = r['Brand']           || '';
+    document.getElementById('category').value     = r['Category']        || 'Mobile Device';
+    document.getElementById('product-name').value = r['Product Name']    || '';
+    document.getElementById('edge-type').value    = r['Edge Type']       || 'Fillet';
+    document.getElementById('total-real-val').value = r['Total Real (mm)'] || '';
+    document.getElementById('part-estimated-val').value = r['Part Est (mm)'] || '';
+    document.getElementById('description').value  = r['Description']     || '';
+    document.getElementById('text-url').value     = r['Text URL']        || '';
+    document.getElementById('worker').value       = r['Worker']          || '';
+
+    updateRatioDisplay();
+    validateInputs();
+    document.getElementById('btn-ok').textContent = 'Update Record';
+    showToast('Loaded for editing', 'success');
+}
+
+async function deleteRecord() {
+    if (currentIdx < 0 || currentIdx >= records.length) return;
+    if (!confirm('Delete this record?')) return;
+    const r = records[currentIdx];
+    try {
+        const res = await appsPost({ action: 'delete', row: r._row });
+        if (!res.ok) throw new Error(res.error);
+        showToast('Record deleted', 'success');
+        await loadRecords();
+    } catch(e) {
+        showToast('Delete failed: ' + e.message, 'error');
+    }
+}
+
+// ──────────────────────────────────────────────
+// 이미지 & 캔버스
+// ──────────────────────────────────────────────
+document.getElementById('img-url').addEventListener('input', function() {
+    const url = this.value.trim();
+    if (!url) return;
+    img.crossOrigin = 'Anonymous';
+    img.src = url;
+});
+
+img.onload = function() {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    canvas.style.display = 'block';
+    document.getElementById('canvas-placeholder').style.display = 'none';
+    resetPoints();
+    redrawCanvas();
+};
+
+img.onerror = function() {
+    showToast('Image load failed. Check URL or CORS policy.', 'error');
+};
+
+canvas.addEventListener('mousemove', function(e) {
+    if (!img.complete || !img.naturalWidth) return;
+    isMouseOver = true;
+    const rect = canvas.getBoundingClientRect();
+    mousePos.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    mousePos.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    redrawCanvas();
+});
+
+canvas.addEventListener('mouseleave', function() {
+    isMouseOver = false;
+    redrawCanvas();
+});
+
+canvas.addEventListener('click', function() {
+    if (!img.complete || !img.naturalWidth) return;
+    const mode = document.querySelector('input[name="mode"]:checked').value;
+
+    if (mode === 'total') {
+        if (totalPoints.length >= 2) totalPoints = [];
+        totalPoints.push({ x: mousePos.x, y: mousePos.y });
+        if (totalPoints.length === 2) applyOrthogonalCorrection(totalPoints);
+    } else {
+        if (partPoints.length >= 2) partPoints = [];
+        partPoints.push({ x: mousePos.x, y: mousePos.y });
+        if (partPoints.length === 2) applyOrthogonalCorrection(partPoints);
+    }
+
+    calculateEstimation();
+    redrawCanvas();
+    validateInputs();
+});
+
+function applyOrthogonalCorrection(points) {
+    const dx = Math.abs(points[1].x - points[0].x);
+    const dy = Math.abs(points[1].y - points[0].y);
+    if (dx > dy) points[1].y = points[0].y;
+    else points[1].x = points[0].x;
+}
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!img.complete || !img.naturalWidth) return;
+    ctx.drawImage(img, 0, 0);
+
+    if (isMouseOver) {
+        ctx.strokeStyle = 'rgba(200,200,200,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, mousePos.y); ctx.lineTo(canvas.width, mousePos.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mousePos.x, 0); ctx.lineTo(mousePos.x, canvas.height); ctx.stroke();
+    }
+
+    drawSegment(totalPoints, '#ff5a5a', 'TOTAL');
+    drawSegment(partPoints, '#5a9fff', 'PART');
+}
+
+function drawSegment(points, color, label) {
+    if (points.length > 0) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(points[0].x, points[0].y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    if (points.length === 2) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(points[1].x, points[1].y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.stroke();
+
+        ctx.font = 'bold 13px DM Mono, monospace';
+        ctx.fillStyle = color;
+        ctx.fillText(label, (points[0].x + points[1].x)/2 + 6, (points[0].y + points[1].y)/2 - 8);
+    }
+}
+
+function getDistance(points) {
+    if (points.length < 2) return 0;
+    return Math.sqrt(Math.pow(points[1].x - points[0].x, 2) + Math.pow(points[1].y - points[0].y, 2));
+}
+
+function calculateEstimation() {
+    const totalPixel = getDistance(totalPoints);
+    const partPixel = getDistance(partPoints);
+    const totalReal = parseFloat(document.getElementById('total-real-val').value);
+
+    if (totalPixel > 0 && partPixel > 0 && !isNaN(totalReal) && totalReal > 0) {
+        const partEst = (totalReal * partPixel) / totalPixel;
+        document.getElementById('part-estimated-val').value = partEst.toFixed(2);
+        updateRatioDisplay();
+    } else {
+        document.getElementById('part-estimated-val').value = '';
+        document.getElementById('ratio-display').textContent = '—';
+    }
+}
+
+function updateRatioDisplay() {
+    const part = parseFloat(document.getElementById('part-estimated-val').value);
+    const total = parseFloat(document.getElementById('total-real-val').value);
+    if (!isNaN(part) && !isNaN(total) && total > 0) {
+        document.getElementById('ratio-display').textContent = (part / total).toFixed(4);
+    } else {
+        document.getElementById('ratio-display').textContent = '—';
+    }
+}
+
+document.getElementById('total-real-val').addEventListener('input', () => {
+    calculateEstimation();
+    validateInputs();
+});
+
+['brand', 'product-name', 'description', 'text-url', 'worker'].forEach(id => {
+    document.getElementById(id).addEventListener('input', validateInputs);
+});
+
+function validateInputs() {
+    const hasImg = img.complete && img.naturalWidth > 0;
+    const hasTotal = totalPoints.length === 2;
+    const hasPart = partPoints.length === 2;
+    const hasTotalVal = document.getElementById('total-real-val').value.trim() !== '';
+    const hasBrand = document.getElementById('brand').value.trim() !== '';
+    const hasProduct = document.getElementById('product-name').value.trim() !== '';
+    const hasDesc = document.getElementById('description').value.trim() !== '';
+    const hasWorker = document.getElementById('worker').value.trim() !== '';
+
+    const ok = hasImg && hasTotal && hasPart && hasTotalVal && hasBrand && hasProduct && hasDesc && hasWorker;
+    const btn = document.getElementById('btn-ok');
+    btn.disabled = !ok;
+    if (ok) btn.classList.add('active');
+    else btn.classList.remove('active');
+}
+
+function resetPoints() {
+    totalPoints = [];
+    partPoints = [];
+    document.getElementById('part-estimated-val').value = '';
+    document.getElementById('ratio-display').textContent = '—';
+    validateInputs();
+}
+
+function resetForm() {
+    resetPoints();
+    document.getElementById('img-url').value = '';
+    document.getElementById('total-real-val').value = '';
+    document.getElementById('brand').value = '';
+    document.getElementById('product-name').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('text-url').value = '';
+    document.getElementById('edge-type').selectedIndex = 0;
+    document.getElementById('category').selectedIndex = 0;
+    document.getElementById('btn-ok').textContent = 'Save to Sheets';
+    editingRow = null;
+    canvas.style.display = 'none';
+    document.getElementById('canvas-placeholder').style.display = 'flex';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    img = new Image();
+    img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.style.display = 'block';
+        document.getElementById('canvas-placeholder').style.display = 'none';
+        resetPoints();
+        redrawCanvas();
+    };
+    document.getElementById('img-url').addEventListener('input', function() {
+        const url = this.value.trim();
+        if (!url) return;
+        img.crossOrigin = 'Anonymous';
+        img.src = url;
+    });
+    validateInputs();
+}
+
+// ──────────────────────────────────────────────
+// 토스트
+// ──────────────────────────────────────────────
+// 페이지 로드 시 저장된 URL 복원
+window.addEventListener('load', () => {
+    const saved = localStorage.getItem('edge_webapp_url');
+    if (saved) {
+        document.getElementById('webapp-url').value = saved;
+    }
+});
+
+let toastTimer;
+function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>
