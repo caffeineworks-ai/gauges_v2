@@ -948,14 +948,16 @@ document.getElementById('total-real-val').addEventListener('input', () => {
 });
 
 function validateInputs() {
-    const hasImg = img.complete && img.naturalWidth > 0;
-    const hasTotal = totalPoints.length === 2;
-    const hasPart = partPoints.length === 2;
+    const isEditing = editingRow !== null;
+
+    const hasImg   = isEditing || (img.complete && img.naturalWidth > 0);
+    const hasTotal = isEditing || totalPoints.length === 2;
+    const hasPart  = isEditing || partPoints.length === 2;
     const hasTotalVal = document.getElementById('total-real-val').value.trim() !== '';
-    const hasBrand = document.getElementById('brand').value.trim() !== '';
-    const hasProduct = document.getElementById('product-name').value.trim() !== '';
-    const hasDesc = document.getElementById('description').value.trim() !== '';
-    const hasWorker = document.getElementById('worker').value.trim() !== '';
+    const hasBrand    = document.getElementById('brand').value.trim() !== '';
+    const hasProduct  = document.getElementById('product-name').value.trim() !== '';
+    const hasDesc     = document.getElementById('description').value.trim() !== '';
+    const hasWorker   = document.getElementById('worker').value.trim() !== '';
 
     const ok = hasImg && hasTotal && hasPart && hasTotalVal && hasBrand && hasProduct && hasDesc && hasWorker;
     const btn = document.getElementById('btn-ok');
