@@ -115,7 +115,6 @@ Ratio (수치) + Description (문장)
     → 수치-감성어 잠재공간 매핑
     → MCP 필렛/챔퍼 매핑 테이블 생성
 ```
-
 ---
 
 ## 기술 스택
@@ -123,3 +122,5 @@ Ratio (수치) + Description (문장)
 - **Frontend**: Vanilla HTML/CSS/JS — GitHub Pages
 - **Backend**: Google Apps Script Web App
 - **Storage**: Google Sheets
+
+https://script.google.com/macros/s/AKfycbyLfVkn9yAvha8LedvyhHABKb451eeSlrOCsx1iB986ybzXCLvl9r95XWFMumE4Y7s/exec
